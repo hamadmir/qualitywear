@@ -1,7 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+export const viewport: Viewport = {
+  themeColor: "#111111",
+};
+
 export const metadata: Metadata = {
+  applicationName: "Quality Wear",
+  appleWebApp: { capable: true, title: "Quality Wear", statusBarStyle: "black-translucent" },
+  icons: {
+    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
   title: {
     default: "Quality Wear | Men's Clothing",
     template: "%s | Quality Wear",

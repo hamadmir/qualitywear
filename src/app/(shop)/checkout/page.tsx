@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Banknote, Check, Loader2, Lock } from "lucide-react";
+import { Banknote, Check, Loader2, Lock, Tag, X } from "lucide-react";
 import { useCart } from "@/components/shop/CartProvider";
 import { createClient } from "@/lib/supabase/client";
 import { rs } from "@/lib/format";
@@ -21,6 +21,34 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", city: "", notes: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [couponInput, setCouponInput] = useState("");
+  const [coupon, setCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [couponMsg, setCouponMsg] = useState("");
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
+
+  const discount = coupon ? Math.min(coupon.discount, subtotal) : 0;
+  const grandTotal = total - discount;
+
+  async function applyCoupon() {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCheckingCoupon(true);
+    setCouponMsg("");
+    const { data, error } = await createClient().rpc("validate_coupon", { p_code: code, p_subtotal: subtotal });
+    setCheckingCoupon(false);
+    const r = data?.[0];
+    if (error || !r) {
+      setCouponMsg("We couldn't check this coupon. Please try again.");
+      return;
+    }
+    if (!r.valid) {
+      setCoupon(null);
+      setCouponMsg(r.message);
+      return;
+    }
+    setCoupon({ code: r.code, discount: Number(r.discount) });
+    setCouponInput("");
+  }
 
   function update(key: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -43,6 +71,7 @@ export default function CheckoutPage() {
       p_city: form.city,
       p_notes: form.notes,
       p_items: items.map((i) => ({ variant_id: i.variantId, quantity: i.quantity })),
+      p_coupon: coupon?.code ?? null,
     });
     if (rpcError || !data?.[0]) {
       setSubmitting(false);
@@ -160,18 +189,60 @@ export default function CheckoutPage() {
               </li>
             ))}
           </ul>
-          <dl className="mt-6 space-y-3 border-t border-white/15 pt-5 text-sm">
+          <div className="mt-6 border-t border-white/15 pt-5">
+            {coupon ? (
+              <div className="flex items-center justify-between rounded-2xl bg-amber/15 px-4 py-3 text-sm">
+                <span className="flex items-center gap-2 font-semibold text-amber">
+                  <Tag className="h-4 w-4" /> {coupon.code}
+                </span>
+                <button type="button" onClick={() => setCoupon(null)} className="rounded-full p-1 text-white/60 hover:bg-white/10 hover:text-white" aria-label="Remove coupon">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      applyCoupon();
+                    }
+                  }}
+                  placeholder="Coupon code"
+                  className="min-w-0 flex-1 rounded-full border border-white/15 bg-white/10 px-4 py-2.5 text-sm uppercase tracking-wider text-white placeholder:normal-case placeholder:tracking-normal placeholder:text-white/40 outline-none focus:border-amber"
+                />
+                <button
+                  type="button"
+                  onClick={applyCoupon}
+                  disabled={checkingCoupon || !couponInput.trim()}
+                  className="rounded-full bg-white px-5 text-sm font-semibold text-ink disabled:opacity-50"
+                >
+                  {checkingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                </button>
+              </div>
+            )}
+            {couponMsg && <p className="mt-2 text-xs text-red-300">{couponMsg}</p>}
+          </div>
+          <dl className="mt-5 space-y-3 text-sm">
             <div className="flex justify-between">
               <dt className="text-white/60">Subtotal</dt>
               <dd>{rs(subtotal)}</dd>
             </div>
+            {discount > 0 && (
+              <div className="flex justify-between text-amber">
+                <dt>Discount ({coupon?.code})</dt>
+                <dd>−{rs(discount)}</dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt className="text-white/60">Delivery</dt>
               <dd>{deliveryCharge === 0 ? <span className="text-amber">Free</span> : rs(deliveryCharge)}</dd>
             </div>
             <div className="flex justify-between border-t border-white/15 pt-4 text-lg font-bold">
               <dt>Total</dt>
-              <dd>{rs(total)}</dd>
+              <dd>{rs(grandTotal)}</dd>
             </div>
           </dl>
           {error && <p className="mt-4 rounded-2xl bg-red-500/15 p-3 text-sm text-red-200">{error}</p>}
@@ -181,7 +252,7 @@ export default function CheckoutPage() {
             className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-amber font-semibold text-ink transition hover:brightness-95 disabled:opacity-60"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-            Place order · {rs(total)}
+            Place order · {rs(grandTotal)}
           </button>
           <p className="mt-3 text-center text-xs text-white/50">No advance payment. Pay on delivery.</p>
         </div>

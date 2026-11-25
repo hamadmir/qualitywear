@@ -59,6 +59,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </ul>
           <dl className="space-y-1 border-t border-neutral-200 px-5 py-4 text-sm">
             <div className="flex justify-between"><dt className="text-neutral-500">Subtotal</dt><dd>{rs(order.subtotal)}</dd></div>
+            {Number(order.discount) > 0 && (
+              <div className="flex justify-between text-green-700"><dt>Discount ({order.coupon_code})</dt><dd>−{rs(order.discount)}</dd></div>
+            )}
             <div className="flex justify-between"><dt className="text-neutral-500">Delivery</dt><dd>{rs(order.delivery_charge)}</dd></div>
             <div className="flex justify-between pt-2 text-base font-bold"><dt>Total</dt><dd>{rs(order.total)}</dd></div>
             <div className="flex justify-between pt-1 text-xs text-neutral-500">

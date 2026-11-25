@@ -110,6 +110,8 @@ export type Order = {
   notes: string | null;
   subtotal: number;
   delivery_charge: number;
+  discount: number;
+  coupon_code: string | null;
   total: number;
   payment_method: "cod" | "online";
   payment_status: "unpaid" | "paid" | "refunded";
@@ -128,5 +130,21 @@ export type StoreMedia = {
   storage_path: string | null;
   caption: string | null;
   sort_order: number;
+  created_at: string;
+};
+
+export type Coupon = {
+  id: string;
+  code: string;
+  description: string | null;
+  discount_type: "percent" | "fixed";
+  value: number;
+  max_discount: number | null;
+  min_order: number;
+  max_uses: number | null;
+  used_count: number;
+  starts_at: string | null;
+  expires_at: string | null;
+  is_active: boolean;
   created_at: string;
 };

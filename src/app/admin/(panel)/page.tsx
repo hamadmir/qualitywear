@@ -3,6 +3,7 @@ import { AlertTriangle, Clock, Package, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, rs, STATUS_COLORS, STATUS_LABELS } from "@/lib/format";
 import type { Order } from "@/lib/types";
+import OrderAlerts from "@/components/admin/OrderAlerts";
 
 function startOfTodayPKT() {
   const now = new Date();
@@ -68,6 +69,7 @@ export default async function DashboardPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold">Dashboard</h1>
+      <OrderAlerts />
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => {
           const body = (
