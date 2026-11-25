@@ -15,6 +15,7 @@ export default function AdminLoginPage() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   async function finishLogin() {
     const supabase = createClient();
@@ -32,6 +33,7 @@ export default function AdminLoginPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setNotice("");
     const supabase = createClient();
 
     if (mode === "setup") {
@@ -55,6 +57,12 @@ export default function AdminLoginPage() {
     const { error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (signInError) {
       setLoading(false);
+      if (/confirm/i.test(signInError.message)) {
+        setMode("login");
+        setError("");
+        setNotice("Account created. We've sent a confirmation link to your email. Click it, then come back here and sign in.");
+        return;
+      }
       setError(mode === "setup" ? "Account created, but sign-in failed. Please try signing in." : "Incorrect email or password.");
       return;
     }
@@ -117,6 +125,7 @@ export default function AdminLoginPage() {
           )}
         </div>
         {error && <p className="mt-4 rounded-2xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {notice && <p className="mt-4 rounded-2xl bg-green-50 p-3 text-sm text-green-800">{notice}</p>}
         <button className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink font-semibold text-white transition hover:bg-black disabled:opacity-60" disabled={loading}>
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}
           {mode === "login" ? "Sign in" : "Create account & sign in"}
