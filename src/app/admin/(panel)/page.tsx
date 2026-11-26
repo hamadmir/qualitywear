@@ -17,6 +17,7 @@ export default async function DashboardPage() {
   const today = startOfTodayPKT();
   const monthAgo = new Date(Date.now() - 30 * 86400 * 1000).toISOString();
 
+  const { count: unreadChats } = await supabase.from("order_messages").select("id", { count: "exact", head: true }).eq("read_by_admin", false);
   const [todayRes, pendingRes, productsRes, lowStockRes, recentRes, monthRes, itemsRes] = await Promise.all([
     supabase.from("orders").select("total, status").gte("created_at", today),
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
@@ -70,6 +71,12 @@ export default async function DashboardPage() {
     <div>
       <h1 className="text-2xl font-bold">Dashboard</h1>
       <OrderAlerts />
+      {(unreadChats ?? 0) > 0 && (
+        <Link href="/admin/orders" className="mt-4 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 hover:bg-red-100">
+          <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">{unreadChats}</span>
+          New customer {unreadChats === 1 ? "message" : "messages"} in order chats. Open orders to reply.
+        </Link>
+      )}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => {
           const body = (

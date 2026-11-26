@@ -23,7 +23,7 @@ export default function Footer({ categories, settings }: { categories: Category[
               <span className="text-lg font-bold tracking-tight text-white">Quality Wear</span>
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed">
-              Premium menswear built to last: shirts, jeans, polos and jackets. Cash on delivery across Pakistan.
+              Premium menswear built to last: shirts, jeans, polos and jackets. Delivered across Pakistan.
             </p>
             {socials.length > 0 && (
               <div className="mt-5 flex flex-wrap gap-2">
@@ -114,7 +114,7 @@ export default function Footer({ categories, settings }: { categories: Category[
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-6 py-5 text-xs sm:px-10">
           <span>© {new Date().getFullYear()} {settings.shop_name}. All rights reserved.</span>
-          <span>Cash on delivery · Nationwide shipping</span>
+          <span>Bank · JazzCash · Easypaisa · Nationwide shipping</span>
         </div>
       </div>
     </footer>

@@ -134,7 +134,7 @@ export default function CartPage() {
             Proceed to checkout <ArrowUpRight className="h-4 w-4" />
           </Link>
           <p className="mt-4 flex items-center justify-center gap-2 text-xs text-white/60">
-            <Banknote className="h-4 w-4" /> Pay with cash on delivery
+            <Banknote className="h-4 w-4" /> Pay by bank, JazzCash or Easypaisa
           </p>
           <Link href="/shop" className="mt-4 block text-center text-sm text-white/70 hover:text-white">
             Continue shopping

@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Quality Wear",
     short_name: "Quality Wear",
-    description: "Premium menswear. Cash on delivery across Pakistan.",
+    description: "Premium menswear. Nationwide delivery across Pakistan.",
     start_url: "/",
     scope: "/",
     display: "standalone",

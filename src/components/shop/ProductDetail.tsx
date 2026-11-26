@@ -140,7 +140,7 @@ export default function ProductDetail({ product, whatsappNumber }: { product: Pr
             </>
           )}
         </div>
-        <p className="mt-1 text-sm text-neutral-500">Cash on delivery available</p>
+        <p className="mt-1 text-sm text-neutral-500">Bank transfer · JazzCash · Easypaisa</p>
 
         <div className="mt-8 rounded-[24px] border border-black/5 bg-white p-5 sm:p-6">
           {colors.length > 0 && (
@@ -255,7 +255,7 @@ export default function ProductDetail({ product, whatsappNumber }: { product: Pr
 
         <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
           {[
-            { icon: Banknote, t: "Cash on delivery" },
+            { icon: Banknote, t: "Bank, JazzCash, Easypaisa" },
             { icon: Truck, t: "Delivery in 3–5 days" },
             { icon: RefreshCcw, t: "Easy size exchange" },
             { icon: ShieldCheck, t: "Quality checked" },
@@ -283,7 +283,7 @@ export default function ProductDetail({ product, whatsappNumber }: { product: Pr
               <Plus className="h-4 w-4 transition group-open:rotate-45" />
             </summary>
             <p className="mt-3 text-sm leading-relaxed text-neutral-600">
-              We deliver to every city in Pakistan, usually within 3 to 5 working days. Pay in cash when your parcel arrives.
+              We deliver to every city in Pakistan, usually within 3 to 5 working days. After you order, we confirm your items and share payment details in your order chat.
             </p>
           </details>
           <details className="group rounded-[20px] border border-black/5 bg-white p-5">

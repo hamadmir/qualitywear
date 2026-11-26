@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Loader2, PackageSearch, X } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, Check, Loader2, MessageCircle, PackageSearch, X } from "lucide-react";
+import { getSavedOrders, orderChatUrl, type SavedOrder } from "@/lib/my-orders";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate, rs, STATUS_LABELS } from "@/lib/format";
 import type { OrderStatus } from "@/lib/types";
@@ -15,6 +17,7 @@ type Tracked = {
   customer_name: string;
   city: string;
   items: { product_name: string; size: string | null; color: string | null; quantity: number; line_total: number; image_url: string | null }[];
+  access_token: string;
 };
 
 const STEPS: OrderStatus[] = ["pending", "confirmed", "shipped", "delivered"];
@@ -33,6 +36,8 @@ export default function TrackPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Tracked | null>(null);
   const [error, setError] = useState("");
+  const [saved, setSaved] = useState<SavedOrder[]>([]);
+  useEffect(() => setSaved(getSavedOrders()), []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,6 +71,25 @@ export default function TrackPage() {
       </PageHero>
 
       <div className="mx-auto max-w-3xl">
+        {saved.length > 0 && !result && (
+          <div className="animate-fade-up mt-6 rounded-[24px] border border-black/5 bg-white p-5">
+            <p className="text-sm font-semibold">Orders on this device</p>
+            <ul className="mt-3 divide-y divide-black/5">
+              {saved.map((o) => (
+                <li key={o.no}>
+                  <Link href={orderChatUrl(o.no, o.token)} className="flex items-center gap-3 py-3 text-sm hover:text-brass">
+                    <MessageCircle className="h-4 w-4 text-brass" />
+                    <span className="font-mono font-semibold">{o.no}</span>
+                    <span className="text-neutral-400">{new Date(o.at).toLocaleDateString("en-GB", { timeZone: "Asia/Karachi" })}</span>
+                    <span className="ml-auto flex items-center gap-1 font-semibold">
+                      Open chat <ArrowUpRight className="h-4 w-4" />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {error && <p className="animate-fade-up mt-6 rounded-2xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
 
         {result && (
@@ -122,7 +146,15 @@ export default function TrackPage() {
                 </li>
               ))}
             </ul>
-            <p className="mt-6 text-right text-lg font-bold">Total {rs(result.total)}</p>
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <Link
+                href={orderChatUrl(result.order_number, result.access_token)}
+                className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white"
+              >
+                <MessageCircle className="h-4 w-4 text-amber" /> Open order chat
+              </Link>
+              <p className="text-lg font-bold">Total {rs(result.total)}</p>
+            </div>
           </div>
         )}
       </div>

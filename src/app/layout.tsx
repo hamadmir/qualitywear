@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: "%s | Quality Wear",
   },
   description:
-    "Quality Wear: premium men's shirts, jeans, polos and jackets. Cash on delivery across Pakistan.",
+    "Quality Wear: premium men's shirts, jeans, polos and jackets. Nationwide delivery across Pakistan.",
 };
 
 export default function RootLayout({

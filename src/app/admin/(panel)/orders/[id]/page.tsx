@@ -5,11 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDate, rs, STATUS_COLORS, STATUS_LABELS, whatsappLink } from "@/lib/format";
 import type { Order } from "@/lib/types";
 import OrderStatusControl from "@/components/admin/OrderStatusControl";
+import AdminOrderChat from "@/components/admin/AdminOrderChat";
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data } = await supabase.from("orders").select("*, order_items(*)").eq("id", id).maybeSingle();
+  const [{ data }, { data: settings }] = await Promise.all([
+    supabase.from("orders").select("*, order_items(*)").eq("id", id).maybeSingle(),
+    supabase.from("admin_settings").select("payment_instructions").eq("id", 1).maybeSingle(),
+  ]);
   if (!data) notFound();
   const order = data as Order;
 
@@ -32,6 +36,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-6">
+        <AdminOrderChat order={order} paymentInstructions={settings?.payment_instructions ?? null} />
         <div className="card overflow-hidden">
           <h2 className="border-b border-neutral-200 px-5 py-4 font-semibold">Items</h2>
           <ul className="divide-y divide-neutral-100">
@@ -66,9 +72,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <div className="flex justify-between pt-2 text-base font-bold"><dt>Total</dt><dd>{rs(order.total)}</dd></div>
             <div className="flex justify-between pt-1 text-xs text-neutral-500">
               <dt>Payment</dt>
-              <dd>{order.payment_method === "cod" ? "Cash on Delivery" : "Online"} · {order.payment_status}</dd>
+              <dd>
+                {order.payment_method === "cod" ? "Cash on delivery" : order.payment_method === "manual" ? "Bank / JazzCash / Easypaisa" : "Online"} ·{" "}
+                <span className={order.payment_status === "paid" ? "font-semibold text-green-700" : ""}>{order.payment_status}</span>
+              </dd>
             </div>
           </dl>
+        </div>
         </div>
 
         <div className="space-y-6">

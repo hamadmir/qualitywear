@@ -21,7 +21,7 @@ import Reveal from "@/components/ui/Reveal";
 import Eyebrow from "@/components/ui/Eyebrow";
 
 const DEFAULT_FAQ = `How do I pay?
-Cash on delivery. Pay the rider when your parcel arrives. No advance payment needed.
+By bank transfer, JazzCash or Easypaisa. After you place your order, your order chat opens and we share payment details there. Send us the payment screenshot and we ship.
 
 How long does delivery take?
 Usually 3 to 5 working days, to every city in Pakistan.
@@ -98,10 +98,10 @@ export default async function HomePage() {
     (settings.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.address)}` : null);
   const faqs = parseFaq(settings.faq_text?.trim() || DEFAULT_FAQ);
   const city = settings.address?.split(",").pop()?.trim();
-  const ticker = [...categories.map((c) => c.name), "Cash on Delivery", "Nationwide Shipping", "Easy Exchanges", "Premium Fabrics", "New Arrivals Weekly"];
+  const ticker = [...categories.map((c) => c.name), "Order Chat", "Nationwide Shipping", "Easy Exchanges", "Premium Fabrics", "New Arrivals Weekly"];
 
   const stats = [
-    { label: "Payment", value: "Cash on Delivery" },
+    { label: "Payment", value: "Bank · JazzCash" },
     { label: "Delivery", value: "3–5 days" },
     { label: "Wrong size?", value: "Easy exchange" },
     settings.free_delivery_above != null
@@ -121,7 +121,7 @@ export default async function HomePage() {
         <div className="relative px-6 pb-8 pt-32 sm:px-12 sm:pt-40">
           <div className="animate-fade-up">
             <Eyebrow light>
-              {city ? `${city}, Pakistan` : "Pakistan"} · Cash on Delivery
+              {city ? `${city}, Pakistan` : "Pakistan"} · Nationwide Delivery
             </Eyebrow>
           </div>
           <h1 className="animate-fade-up delay-100 mt-5 max-w-3xl font-display text-[44px] font-bold leading-[1.02] sm:text-7xl">
@@ -130,7 +130,7 @@ export default async function HomePage() {
             <span className="font-accent text-amber">made to last.</span>
           </h1>
           <p className="animate-fade-up delay-200 mt-6 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg">
-            Shirts, jeans, polos and jackets in premium fabrics, at honest prices. Delivered to your door, and you pay when it arrives.
+            Shirts, jeans, polos and jackets in premium fabrics, at honest prices. Delivered to your door, with a personal chat for every order.
           </p>
           <div className="animate-fade-up delay-300 mt-8 flex flex-wrap gap-3">
             <Link
@@ -249,7 +249,7 @@ export default async function HomePage() {
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { icon: Shirt, title: "Premium fabrics", text: "Every piece is checked for fabric and stitching before it reaches our shelves." },
-              { icon: Banknote, title: "Cash on delivery", text: "Pay only when your parcel is in your hands. No advance payment." },
+              { icon: Banknote, title: "Order chat", text: "Talk to us directly about your order. Pay by bank, JazzCash or Easypaisa." },
               { icon: Truck, title: "Doorstep delivery", text: "We ship to every city in Pakistan, usually within 3 to 5 days." },
               { icon: RefreshCcw, title: "Easy exchanges", text: "Wrong size? Get in touch and we will help you swap it." },
             ].map((f, i) => (
@@ -390,7 +390,7 @@ export default async function HomePage() {
             <h2 className="font-display text-4xl font-bold leading-[1.05] sm:text-6xl">
               Find your next <span className="font-accent">favourite.</span>
             </h2>
-            <p className="mt-4 text-lg text-ink/75">Order online or ask us on WhatsApp. You pay when your parcel arrives.</p>
+            <p className="mt-4 text-lg text-ink/75">Order online or ask us on WhatsApp. Every order gets its own chat with us.</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/shop" className="inline-flex items-center gap-3 rounded-full bg-ink py-2 pl-6 pr-2 font-semibold text-white">
                 Shop Now

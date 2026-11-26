@@ -14,11 +14,11 @@ const DEFAULT_ABOUT = `Quality Wear is a menswear store built on a simple idea: 
 
 We hand-pick every piece we sell, from everyday shirts and polos to jeans and jackets. Each item is checked for fabric and stitching before it reaches our shelves, so what arrives at your door is something we would happily wear ourselves.
 
-Order online from anywhere in Pakistan and pay when your parcel arrives. Or visit our store, try things on, and talk to us in person.`;
+Order online from anywhere in Pakistan and chat with us directly about your order. Or visit our store, try things on, and talk to us in person.`;
 
 const VALUES = [
   { icon: Shirt, title: "Premium fabrics", text: "Every piece is checked for fabric and stitching." },
-  { icon: Banknote, title: "Cash on delivery", text: "Pay only when your parcel arrives." },
+  { icon: Banknote, title: "Simple payment", text: "Bank transfer, JazzCash or Easypaisa, confirmed in your order chat." },
   { icon: Truck, title: "Nationwide shipping", text: "To every city, usually in 3–5 days." },
   { icon: BadgeCheck, title: "Easy exchanges", text: "Wrong size? We'll help you swap it." },
 ];

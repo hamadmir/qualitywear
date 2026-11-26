@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Banknote, Check, Loader2, Lock, Tag, X } from "lucide-react";
+import { Check, Loader2, Lock, MessageCircle, Tag, X } from "lucide-react";
+import { orderChatUrl, saveOrder } from "@/lib/my-orders";
 import { useCart } from "@/components/shop/CartProvider";
 import { createClient } from "@/lib/supabase/client";
 import { rs } from "@/lib/format";
@@ -79,8 +80,10 @@ export default function CheckoutPage() {
       return;
     }
     const orderNo = data[0].order_number as string;
+    const token = data[0].access_token as string;
+    saveOrder(orderNo, token);
     clear();
-    router.push(`/order-success?no=${encodeURIComponent(orderNo)}`);
+    router.push(`${orderChatUrl(orderNo, token)}&new=1`);
   }
 
   if (!ready) return <div className="mx-auto min-h-[50vh] max-w-6xl px-4 py-16" />;
@@ -154,15 +157,30 @@ export default function CheckoutPage() {
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ink text-xs text-white">2</span>
               Payment
             </h2>
-            <div className="mt-5 flex items-center gap-4 rounded-2xl border-2 border-ink p-4">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber">
-                <Banknote className="h-5 w-5" />
-              </span>
-              <div className="flex-1">
-                <p className="font-semibold">Cash on delivery</p>
-                <p className="text-sm text-neutral-500">Pay the rider when your parcel arrives</p>
+            <div className="mt-5 rounded-2xl border-2 border-ink p-4">
+              <div className="flex items-center gap-4">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber">
+                  <MessageCircle className="h-5 w-5" />
+                </span>
+                <div className="flex-1">
+                  <p className="font-semibold">Bank transfer · JazzCash · Easypaisa</p>
+                  <p className="text-sm text-neutral-500">Pay after we confirm your order in chat</p>
+                </div>
+                <Check className="h-5 w-5" />
               </div>
-              <Check className="h-5 w-5" />
+              <ol className="mt-4 grid gap-2 text-sm text-neutral-600 sm:grid-cols-2">
+                {[
+                  "Place your order (no payment now)",
+                  "Your order chat opens instantly",
+                  "We send payment details in the chat",
+                  "Pay, share the screenshot, we ship",
+                ].map((t, i) => (
+                  <li key={t} className="flex items-start gap-2 rounded-xl bg-ivory px-3 py-2">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink text-[10px] font-bold text-white">{i + 1}</span>
+                    {t}
+                  </li>
+                ))}
+              </ol>
             </div>
           </section>
         </div>
@@ -254,7 +272,7 @@ export default function CheckoutPage() {
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
             Place order · {rs(grandTotal)}
           </button>
-          <p className="mt-3 text-center text-xs text-white/50">No advance payment. Pay on delivery.</p>
+          <p className="mt-3 text-center text-xs text-white/50">Nothing to pay now. We&apos;ll share payment details in your order chat.</p>
         </div>
       </form>
     </div>

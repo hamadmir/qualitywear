@@ -20,6 +20,15 @@ export default async function OrdersPage({
   }
   const { data } = await query;
   const orders = (data as Order[]) ?? [];
+  const unread = new Map<string, number>();
+  if (orders.length) {
+    const { data: msgs } = await supabase
+      .from("order_messages")
+      .select("order_id")
+      .eq("read_by_admin", false)
+      .in("order_id", orders.map((o) => o.id));
+    (msgs ?? []).forEach((m: { order_id: string }) => unread.set(m.order_id, (unread.get(m.order_id) ?? 0) + 1));
+  }
 
   return (
     <div>
@@ -62,6 +71,12 @@ export default async function OrdersPage({
                   <Link href={`/admin/orders/${o.id}`} className="font-mono font-semibold hover:underline">
                     {o.order_number}
                   </Link>
+                  {unread.get(o.id) ? (
+                    <span className="ml-2 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      {unread.get(o.id)} new
+                    </span>
+                  ) : null}
+                  {o.payment_status === "paid" && <span className="ml-2 text-[10px] font-semibold text-green-700">PAID</span>}
                 </td>
                 <td className="px-4 py-3">
                   <p>{o.customer_name}</p>

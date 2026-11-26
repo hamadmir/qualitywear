@@ -73,7 +73,7 @@ export default async function ShopPage({ searchParams }: { searchParams: SearchP
         eyebrow="Shop"
         title={title}
         accent={accent}
-        subtitle="Premium shirts, jeans, polos and jackets. Cash on delivery across Pakistan, with easy exchanges."
+        subtitle="Premium shirts, jeans, polos and jackets. Delivered across Pakistan, with easy exchanges."
         image={activeCategory?.image_url}
       />
 

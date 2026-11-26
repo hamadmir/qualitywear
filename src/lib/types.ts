@@ -113,7 +113,7 @@ export type Order = {
   discount: number;
   coupon_code: string | null;
   total: number;
-  payment_method: "cod" | "online";
+  payment_method: "cod" | "online" | "manual";
   payment_status: "unpaid" | "paid" | "refunded";
   status: OrderStatus;
   created_at: string;

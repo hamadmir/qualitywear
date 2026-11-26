@@ -23,13 +23,14 @@ const TEXT_FIELDS = [
 ] as const;
 type TextField = (typeof TEXT_FIELDS)[number];
 
-export default function SettingsForm({ settings }: { settings: Settings }) {
+export default function SettingsForm({ settings, paymentInstructions }: { settings: Settings; paymentInstructions: string }) {
   const router = useRouter();
   const [values, setValues] = useState<Record<TextField, string>>(
     () => Object.fromEntries(TEXT_FIELDS.map((k) => [k, settings[k] ?? ""])) as Record<TextField, string>
   );
   const [delivery, setDelivery] = useState(String(settings.delivery_charge));
   const [freeAbove, setFreeAbove] = useState(settings.free_delivery_above != null ? String(settings.free_delivery_above) : "");
+  const [payment, setPayment] = useState(paymentInstructions);
   const [heroUrl, setHeroUrl] = useState<string | null>(settings.hero_image_url);
   const [heroFile, setHeroFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
@@ -67,7 +68,12 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
     patch.shop_name = values.shop_name.trim() || "Quality Wear";
     patch.delivery_charge = Number(delivery) || 0;
     patch.free_delivery_above = freeAbove ? Number(freeAbove) : null;
-    const { error } = await createClient().from("settings").update(patch).eq("id", 1);
+    const supabase = createClient();
+    const [{ error: e1 }, { error: e2 }] = await Promise.all([
+      supabase.from("settings").update(patch).eq("id", 1),
+      supabase.from("admin_settings").upsert({ id: 1, payment_instructions: payment.trim() || null, updated_at: new Date().toISOString() }),
+    ]);
+    const error = e1 ?? e2;
     setSaving(false);
     if (error) setError(error.message);
     else {
@@ -176,6 +182,24 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
         </div>
       </section>
 
+      <section className="card space-y-3 p-6">
+        <h2 className="font-semibold">Payment details (sent in order chats)</h2>
+        <textarea
+          id="pay"
+          rows={6}
+          className="input font-mono text-[13px]"
+          placeholder={"Bank: Meezan Bank\nAccount title: Quality Wear\nAccount no: 0000 0000 0000\nIBAN: PK00 MEZN 0000 0000 0000 0000\n\nJazzCash / Easypaisa: 0331 6332925 (Quality Wear)"}
+          value={payment}
+          onChange={(e) => {
+            setSaved(false);
+            setPayment(e.target.value);
+          }}
+        />
+        <p className="text-xs text-neutral-500">
+          In each order chat, the &quot;Send payment details&quot; button sends these details with the order total. They are never shown publicly on the website.
+        </p>
+      </section>
+
       <section className="card space-y-5 p-6">
         <h2 className="font-semibold">Delivery</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -202,7 +226,7 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
           id="faq"
           rows={10}
           className="input font-mono text-[13px]"
-          placeholder={"How do I pay?\nCash on delivery. Pay when your parcel arrives.\n\nHow long does delivery take?\n3 to 5 working days."}
+          placeholder={"How do I pay?\nBy bank transfer, JazzCash or Easypaisa after we confirm your order in chat.\n\nHow long does delivery take?\n3 to 5 working days."}
           {...field("faq_text")}
         />
         <p className="text-xs text-neutral-500">
