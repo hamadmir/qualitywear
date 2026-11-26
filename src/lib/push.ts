@@ -19,3 +19,24 @@ export async function registerServiceWorker() {
     return null;
   }
 }
+
+/** Asks for notification permission and returns this browser's push subscription keys (or null). */
+export async function getPushSubscription(): Promise<{ endpoint: string; p256dh: string; auth: string } | null> {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+    return null;
+  }
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") return null;
+  const reg = await registerServiceWorker();
+  if (!reg) return null;
+  await navigator.serviceWorker.ready;
+  const sub =
+    (await reg.pushManager.getSubscription()) ??
+    (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) }));
+  const j = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+  return { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth };
+}
+
+export function pushSupported() {
+  return typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+}

@@ -20,10 +20,22 @@ const TEXT_FIELDS = [
   "tiktok_url",
   "about_text",
   "faq_text",
+  "ga_measurement_id",
+  "meta_pixel_id",
 ] as const;
 type TextField = (typeof TEXT_FIELDS)[number];
 
-export default function SettingsForm({ settings, paymentInstructions }: { settings: Settings; paymentInstructions: string }) {
+export default function SettingsForm({
+  settings,
+  paymentInstructions,
+  automation,
+}: {
+  settings: Settings;
+  paymentInstructions: string;
+  automation: { reminder: number | null; cancel: number | null };
+}) {
+  const [reminderHours, setReminderHours] = useState(automation.reminder != null ? String(automation.reminder) : "");
+  const [cancelHours, setCancelHours] = useState(automation.cancel != null ? String(automation.cancel) : "");
   const router = useRouter();
   const [values, setValues] = useState<Record<TextField, string>>(
     () => Object.fromEntries(TEXT_FIELDS.map((k) => [k, settings[k] ?? ""])) as Record<TextField, string>
@@ -68,10 +80,30 @@ export default function SettingsForm({ settings, paymentInstructions }: { settin
     patch.shop_name = values.shop_name.trim() || "Quality Wear";
     patch.delivery_charge = Number(delivery) || 0;
     patch.free_delivery_above = freeAbove ? Number(freeAbove) : null;
+    patch.ga_measurement_id = values.ga_measurement_id.trim().toUpperCase() || null;
+    patch.meta_pixel_id = values.meta_pixel_id.replace(/\D/g, "") || null;
+    if (patch.ga_measurement_id && !/^G-[A-Z0-9]{4,20}$/.test(String(patch.ga_measurement_id))) {
+      setSaving(false);
+      setError("Google Analytics ID should look like G-XXXXXXXXXX");
+      return;
+    }
+    const rem = reminderHours.trim() ? Number(reminderHours) : null;
+    const can = cancelHours.trim() ? Number(cancelHours) : null;
+    if ((rem != null && !(rem >= 1 && rem <= 720)) || (can != null && !(can >= 6 && can <= 2160))) {
+      setSaving(false);
+      setError("Reminder must be 1–720 hours and auto-cancel 6–2160 hours (or leave empty to turn off).");
+      return;
+    }
     const supabase = createClient();
     const [{ error: e1 }, { error: e2 }] = await Promise.all([
       supabase.from("settings").update(patch).eq("id", 1),
-      supabase.from("admin_settings").upsert({ id: 1, payment_instructions: payment.trim() || null, updated_at: new Date().toISOString() }),
+      supabase.from("admin_settings").upsert({
+        id: 1,
+        payment_instructions: payment.trim() || null,
+        reminder_hours: rem,
+        auto_cancel_hours: can,
+        updated_at: new Date().toISOString(),
+      }),
     ]);
     const error = e1 ?? e2;
     setSaving(false);
@@ -197,6 +229,42 @@ export default function SettingsForm({ settings, paymentInstructions }: { settin
         />
         <p className="text-xs text-neutral-500">
           In each order chat, the &quot;Send payment details&quot; button sends these details with the order total. They are never shown publicly on the website.
+        </p>
+      </section>
+
+      <section className="card space-y-4 p-6">
+        <h2 className="font-semibold">Unpaid orders (automatic)</h2>
+        <p className="text-xs text-neutral-500">
+          Timers start when you first reply in the order chat, so a customer always gets your payment details first. Orders where the customer has sent a
+          payment screenshot are never cancelled automatically. Leave a box empty to turn that step off.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="label" htmlFor="remh">Send payment reminder after (hours)</label>
+            <input id="remh" type="number" min={1} max={720} className="input" value={reminderHours} onChange={(e) => { setSaved(false); setReminderHours(e.target.value); }} placeholder="Off" />
+          </div>
+          <div>
+            <label className="label" htmlFor="canh">Cancel & release stock after (hours)</label>
+            <input id="canh" type="number" min={6} max={2160} className="input" value={cancelHours} onChange={(e) => { setSaved(false); setCancelHours(e.target.value); }} placeholder="Off" />
+          </div>
+        </div>
+      </section>
+
+      <section className="card space-y-4 p-6">
+        <h2 className="font-semibold">Marketing tracking</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="label" htmlFor="ga">Google Analytics 4 Measurement ID</label>
+            <input id="ga" className="input font-mono" placeholder="G-XXXXXXXXXX" {...field("ga_measurement_id")} />
+          </div>
+          <div>
+            <label className="label" htmlFor="px">Meta (Facebook / Instagram) Pixel ID</label>
+            <input id="px" className="input font-mono" placeholder="123456789012345" {...field("meta_pixel_id")} />
+          </div>
+        </div>
+        <p className="text-xs text-neutral-500">
+          Tracks page views, product views, add to cart, checkout and purchases automatically. Find the GA4 ID in Google Analytics → Admin → Data streams,
+          and the Pixel ID in Meta Events Manager.
         </p>
       </section>
 

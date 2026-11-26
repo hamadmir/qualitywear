@@ -18,6 +18,8 @@ const DEFAULT_SETTINGS: Settings = {
   tiktok_url: null,
   about_text: null,
   hero_image_url: null,
+  ga_measurement_id: null,
+  meta_pixel_id: null,
   faq_text: null,
 };
 

@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, CheckCircle2, Loader2, Paperclip, Send, Store, X } from "lucide-react";
+import { Bell, BellRing, Check, CheckCircle2, Loader2, Paperclip, Send, Star, Store, Truck, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image-upload";
 import { rs, STATUS_LABELS, whatsappLink } from "@/lib/format";
 import { saveOrder } from "@/lib/my-orders";
 import type { OrderStatus } from "@/lib/types";
 import { WhatsAppIcon } from "./WhatsAppButton";
+import ReviewForm from "./ReviewForm";
+import Stars from "./Stars";
+import { getPushSubscription, pushSupported } from "@/lib/push";
+import { trackPurchase } from "@/lib/analytics";
 
 type ChatMessage = { id: string; sender: "customer" | "admin" | "system"; body: string; has_attachment: boolean; created_at: string };
 type ChatOrder = {
@@ -23,7 +27,14 @@ type ChatOrder = {
   customer_name: string;
   city: string;
   created_at: string;
-  items: { product_name: string; size: string | null; color: string | null; quantity: number; line_total: number; image_url: string | null }[];
+  courier: string | null;
+  tracking_number: string | null;
+  tracking_url: string | null;
+  items: {
+    product_id: string | null;
+    product_slug: string | null;
+    review: { rating: number; approved: boolean } | null;
+    product_name: string; size: string | null; color: string | null; quantity: number; line_total: number; image_url: string | null }[];
 };
 
 const STEPS = [
@@ -38,6 +49,23 @@ function stepIndex(o: ChatOrder) {
   if (o.status === "shipped") return 2;
   if (o.payment_status === "paid" || o.status === "confirmed") return 1;
   return 0;
+}
+
+function Linkify({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        /^https?:\/\//.test(part) ? (
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="break-all font-semibold underline underline-offset-2">
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
 }
 
 function time(iso: string) {
@@ -63,6 +91,8 @@ export default function OrderChat({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [showWelcome, setShowWelcome] = useState(justPlaced);
+  const [notify, setNotify] = useState<"unknown" | "unsupported" | "off" | "on" | "busy" | "blocked">("unknown");
+  const [reviewing, setReviewing] = useState<{ id: string; name: string; rating?: number } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const lastCount = useRef(0);
@@ -90,6 +120,51 @@ export default function OrderChat({
       document.removeEventListener("visibilitychange", onVis);
     };
   }, [load, orderNo, token]);
+
+  useEffect(() => {
+    if (!pushSupported()) return setNotify("unsupported");
+    if (Notification.permission === "denied") return setNotify("blocked");
+    try {
+      setNotify(localStorage.getItem(`qw-notify-${orderNo}`) && Notification.permission === "granted" ? "on" : "off");
+    } catch {
+      setNotify("off");
+    }
+  }, [orderNo]);
+
+  useEffect(() => {
+    if (justPlaced && order) {
+      trackPurchase(
+        order.order_number,
+        Number(order.total),
+        order.items.map((i) => ({ id: i.product_id ?? i.product_name, name: i.product_name, price: Number(i.line_total) / i.quantity, quantity: i.quantity, variant: i.size ?? undefined }))
+      );
+    }
+  }, [justPlaced, order]);
+
+  async function enableNotifications() {
+    setNotify("busy");
+    try {
+      const sub = await getPushSubscription();
+      if (!sub) {
+        setNotify(typeof Notification !== "undefined" && Notification.permission === "denied" ? "blocked" : "off");
+        return;
+      }
+      const { error } = await createClient().rpc("save_customer_push", {
+        p_order_number: orderNo,
+        p_token: token,
+        p_endpoint: sub.endpoint,
+        p_p256dh: sub.p256dh,
+        p_auth: sub.auth,
+      });
+      if (error) throw error;
+      try {
+        localStorage.setItem(`qw-notify-${orderNo}`, "1");
+      } catch {}
+      setNotify("on");
+    } catch {
+      setNotify("off");
+    }
+  }
 
   useEffect(() => {
     if (messages.length !== lastCount.current) {
@@ -177,6 +252,20 @@ export default function OrderChat({
         </div>
       )}
 
+      {reviewing && (
+        <ReviewForm
+          orderNo={orderNo}
+          token={token}
+          productId={reviewing.id}
+          productName={reviewing.name}
+          initialRating={reviewing.rating}
+          onDone={() => {
+            setReviewing(null);
+            load();
+          }}
+        />
+      )}
+
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
         {/* Chat */}
         <section className="flex h-[calc(100dvh-140px)] min-h-[520px] flex-col overflow-hidden rounded-[24px] border border-black/5 bg-white lg:h-[calc(100dvh-120px)]">
@@ -195,11 +284,41 @@ export default function OrderChat({
             )}
           </header>
 
+          {(notify === "off" || notify === "busy") && order.status !== "cancelled" && order.status !== "delivered" && (
+            <button
+              onClick={enableNotifications}
+              disabled={notify === "busy"}
+              className="flex w-full items-center gap-3 border-b border-amber/30 bg-amber/15 px-5 py-3 text-left text-sm transition hover:bg-amber/25"
+            >
+              {notify === "busy" ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <BellRing className="h-4 w-4 shrink-0 text-brass" />}
+              <span className="flex-1">
+                <span className="font-semibold">Get notified when we reply</span>
+                <span className="hidden text-neutral-600 sm:inline"> · payment details, shipping and tracking updates</span>
+              </span>
+              <span className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white">Turn on</span>
+            </button>
+          )}
+          {notify === "on" && (
+            <p className="flex items-center gap-2 border-b border-black/5 bg-green-50 px-5 py-2 text-xs text-green-800">
+              <Bell className="h-3.5 w-3.5" /> Notifications are on for this order.
+            </p>
+          )}
+          {notify === "blocked" && (
+            <p className="border-b border-black/5 bg-neutral-50 px-5 py-2 text-xs text-neutral-600">
+              Notifications are blocked in your browser settings. Keep this page bookmarked, or find it any time under Track Order.
+            </p>
+          )}
+          {notify === "unsupported" && (
+            <p className="border-b border-black/5 bg-neutral-50 px-5 py-2 text-xs text-neutral-600">
+              Tip: bookmark this page or add the site to your home screen. You can always reopen this chat from Track Order.
+            </p>
+          )}
+
           <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto bg-ivory/60 px-4 py-5 sm:px-6">
             {messages.map((m) =>
               m.sender === "system" ? (
                 <div key={m.id} className="animate-fade-in mx-auto max-w-md rounded-2xl border border-amber/30 bg-amber/10 px-4 py-3 text-center text-sm text-ink">
-                  <p className="whitespace-pre-line">{m.body}</p>
+                  <p className="whitespace-pre-line"><Linkify text={m.body} /></p>
                   <p className="mt-1 text-[11px] text-neutral-500">{time(m.created_at)}</p>
                 </div>
               ) : (
@@ -215,7 +334,7 @@ export default function OrderChat({
                         <Paperclip className="h-3.5 w-3.5" /> Payment screenshot sent
                       </p>
                     )}
-                    {m.body && <p className="whitespace-pre-line break-words">{m.body}</p>}
+                    {m.body && <p className="whitespace-pre-line break-words">{m.sender === "admin" ? <Linkify text={m.body} /> : m.body}</p>}
                     <p className={`mt-1 text-right text-[10px] ${m.sender === "customer" ? "text-white/50" : "text-neutral-400"}`}>{time(m.created_at)}</p>
                   </div>
                 </div>
@@ -312,6 +431,24 @@ export default function OrderChat({
             )}
           </div>
 
+          {(order.status === "shipped" || order.status === "delivered") && (order.tracking_number || order.courier) && (
+            <div className="rounded-[24px] border border-indigo-100 bg-indigo-50 p-5 text-sm">
+              <p className="flex items-center gap-2 font-semibold text-indigo-900">
+                <Truck className="h-4 w-4" /> Shipped{order.courier ? ` with ${order.courier}` : ""}
+              </p>
+              {order.tracking_number && (
+                <p className="mt-2 text-indigo-900/80">
+                  Tracking number: <span className="font-mono font-semibold text-indigo-950">{order.tracking_number}</span>
+                </p>
+              )}
+              {order.tracking_url && (
+                <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
+                  Track parcel
+                </a>
+              )}
+            </div>
+          )}
+
           <div className="rounded-[24px] border border-black/5 bg-white p-5">
             <p className="font-semibold">Your items</p>
             <ul className="mt-3 space-y-3">
@@ -327,7 +464,27 @@ export default function OrderChat({
                       {it.color && ` · ${it.color}`} · Qty {it.quantity}
                     </p>
                   </div>
-                  <p className="font-medium">{rs(it.line_total)}</p>
+                  <div className="text-right">
+                    <p className="font-medium">{rs(it.line_total)}</p>
+                    {(order.status === "shipped" || order.status === "delivered") && it.product_id && (
+                      it.review ? (
+                        <button
+                          onClick={() => setReviewing({ id: it.product_id!, name: it.product_name, rating: it.review!.rating })}
+                          className="mt-1 inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-ink"
+                          title={it.review.approved ? "Published" : "Waiting for approval"}
+                        >
+                          <Stars value={it.review.rating} size={11} /> Edit
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setReviewing({ id: it.product_id!, name: it.product_name })}
+                          className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber px-2.5 py-1 text-[11px] font-semibold text-ink"
+                        >
+                          <Star className="h-3 w-3" /> Review
+                        </button>
+                      )
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

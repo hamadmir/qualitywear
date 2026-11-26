@@ -4,8 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
+  BarChart3,
+  BellRing,
   ExternalLink,
   FileText,
+  Star,
   FolderTree,
   Inbox,
   TicketPercent,
@@ -25,6 +28,9 @@ const LINKS = [
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: FolderTree },
+  { href: "/admin/reviews", label: "Reviews", icon: Star },
+  { href: "/admin/stock-alerts", label: "Stock Alerts", icon: BellRing },
+  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/coupons", label: "Coupons", icon: TicketPercent },
   { href: "/admin/messages", label: "Messages", icon: Inbox },
   { href: "/admin/blog", label: "Journal", icon: FileText },
@@ -81,7 +87,7 @@ export default function AdminNav({ email }: { email: string }) {
 
   return (
     <>
-      <div className="flex items-center justify-between bg-ink px-4 py-3 text-white lg:hidden">
+      <div className="flex items-center justify-between bg-ink px-4 py-3 text-white print:hidden lg:hidden">
         <span className="font-display font-bold tracking-[0.18em]">
           QW <span className="text-brass">ADMIN</span>
         </span>
@@ -100,7 +106,7 @@ export default function AdminNav({ email }: { email: string }) {
           </aside>
         </div>
       )}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-ink p-4 lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto bg-ink p-4 print:hidden lg:flex">
         <p className="mb-8 px-3 pt-2 font-display text-lg font-bold tracking-[0.18em] text-white">
           QW <span className="text-brass">ADMIN</span>
         </p>

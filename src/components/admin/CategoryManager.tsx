@@ -14,11 +14,12 @@ type Draft = {
   sort_order: string;
   is_active: boolean;
   image_url: string | null;
+  size_chart: string;
   file?: File;
   preview?: string;
 };
 
-const EMPTY: Draft = { name: "", sort_order: "0", is_active: true, image_url: null };
+const EMPTY: Draft = { name: "", sort_order: "0", is_active: true, image_url: null, size_chart: "" };
 
 function storagePathFromUrl(url: string | null) {
   if (!url) return null;
@@ -62,6 +63,7 @@ export default function CategoryManager({
         sort_order: Number(draft.sort_order) || 0,
         is_active: draft.is_active,
         image_url,
+        size_chart: draft.size_chart.trim() || null,
       };
       const { error } = draft.id
         ? await supabase.from("categories").update(payload).eq("id", draft.id)
@@ -119,7 +121,7 @@ export default function CategoryManager({
                 <button
                   onClick={() => {
                     setError("");
-                    setDraft({ id: c.id, name: c.name, sort_order: String(c.sort_order), is_active: c.is_active, image_url: c.image_url });
+                    setDraft({ id: c.id, name: c.name, sort_order: String(c.sort_order), is_active: c.is_active, image_url: c.image_url, size_chart: c.size_chart ?? "" });
                   }}
                   className="p-2 text-neutral-500 hover:text-ink"
                   aria-label="Edit"
@@ -167,6 +169,20 @@ export default function CategoryManager({
             <div>
               <label className="label" htmlFor="corder">Display order (lower comes first)</label>
               <input id="corder" type="number" className="input" value={draft.sort_order} onChange={(e) => setDraft({ ...draft, sort_order: e.target.value })} />
+            </div>
+            <div>
+              <label className="label" htmlFor="cchart">Size chart</label>
+              <textarea
+                id="cchart"
+                rows={7}
+                className="input font-mono text-xs"
+                value={draft.size_chart}
+                onChange={(e) => setDraft({ ...draft, size_chart: e.target.value })}
+                placeholder={"Size | Chest (in) | Length (in)\nS | 38 | 28\nM | 40 | 29\nL | 42 | 30\nMeasurements are of the garment, in inches."}
+              />
+              <p className="mt-1 text-xs text-neutral-500">
+                One row per line, columns separated by &quot;|&quot;. The first line is the header. Lines without &quot;|&quot; show as notes. Shown as &quot;Size guide&quot; on every product in this category.
+              </p>
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={draft.is_active} onChange={(e) => setDraft({ ...draft, is_active: e.target.checked })} />

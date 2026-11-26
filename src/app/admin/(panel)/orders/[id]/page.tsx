@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MessageCircle, Phone } from "lucide-react";
+import { ArrowLeft, MessageCircle, Phone, Printer } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, rs, STATUS_COLORS, STATUS_LABELS, whatsappLink } from "@/lib/format";
 import type { Order } from "@/lib/types";
@@ -33,6 +33,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           {STATUS_LABELS[order.status]}
         </span>
         <span className="text-sm text-neutral-500">{formatDate(order.created_at)}</span>
+        <Link href={`/admin/orders/${order.id}/invoice`} target="_blank" className="btn-outline ml-auto px-3 py-1.5 text-xs">
+          <Printer className="h-3.5 w-3.5" /> Invoice / packing slip
+        </Link>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">

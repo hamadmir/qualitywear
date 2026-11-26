@@ -5,6 +5,7 @@ export type Category = {
   image_url: string | null;
   sort_order: number;
   is_active: boolean;
+  size_chart?: string | null;
 };
 
 export type ProductImage = {
@@ -37,7 +38,7 @@ export type Product = {
   created_at: string;
   product_images: ProductImage[];
   product_variants: Variant[];
-  categories?: { name: string; slug: string } | null;
+  categories?: { name: string; slug: string; size_chart?: string | null } | null;
 };
 
 export type Settings = {
@@ -56,6 +57,8 @@ export type Settings = {
   tiktok_url: string | null;
   about_text: string | null;
   hero_image_url: string | null;
+  ga_measurement_id: string | null;
+  meta_pixel_id: string | null;
   faq_text: string | null;
 };
 
@@ -116,6 +119,9 @@ export type Order = {
   delivery_charge: number;
   discount: number;
   coupon_code: string | null;
+  courier?: string | null;
+  tracking_number?: string | null;
+  tracking_url?: string | null;
   total: number;
   payment_method: "cod" | "online" | "manual";
   payment_status: "unpaid" | "paid" | "refunded";
@@ -125,7 +131,7 @@ export type Order = {
 };
 
 export const PRODUCT_SELECT =
-  "*, product_images(*), product_variants(*), categories(name, slug)";
+  "*, product_images(*), product_variants(*), categories(name, slug, size_chart)";
 
 export type StoreMedia = {
   id: string;
@@ -151,4 +157,29 @@ export type Coupon = {
   expires_at: string | null;
   is_active: boolean;
   created_at: string;
+};
+
+export type Review = {
+  id: string;
+  product_id: string;
+  order_id: string | null;
+  customer_name: string;
+  city: string | null;
+  rating: number;
+  body: string | null;
+  photos: string[];
+  is_approved: boolean;
+  admin_reply: string | null;
+  created_at: string;
+};
+
+export type StockAlert = {
+  id: string;
+  product_id: string;
+  variant_id: string;
+  name: string | null;
+  phone: string;
+  endpoint: string | null;
+  created_at: string;
+  notified_at: string | null;
 };

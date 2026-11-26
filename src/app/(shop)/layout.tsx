@@ -3,6 +3,7 @@ import Header from "@/components/shop/Header";
 import Footer from "@/components/shop/Footer";
 import WhatsAppButton from "@/components/shop/WhatsAppButton";
 import InstallApp from "@/components/InstallApp";
+import Analytics from "@/components/shop/Analytics";
 import { getCategories, getSettings } from "@/lib/shop-data";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       <Footer categories={categories} settings={settings} />
       {settings.whatsapp_number && <WhatsAppButton number={settings.whatsapp_number} />}
       <InstallApp />
+      <Analytics gaId={settings.ga_measurement_id} pixelId={settings.meta_pixel_id} />
     </CartProvider>
   );
 }

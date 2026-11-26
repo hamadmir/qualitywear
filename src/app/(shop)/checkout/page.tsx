@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, Lock, MessageCircle, Tag, X } from "lucide-react";
 import { orderChatUrl, saveOrder } from "@/lib/my-orders";
+import { trackBeginCheckout } from "@/lib/analytics";
 import { useCart } from "@/components/shop/CartProvider";
 import { createClient } from "@/lib/supabase/client";
 import { rs } from "@/lib/format";
@@ -18,6 +19,15 @@ const field = "w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text
 
 export default function CheckoutPage() {
   const { items, ready, subtotal, deliveryCharge, total, clear } = useCart();
+  const tracked = useRef(false);
+  useEffect(() => {
+    if (!ready || tracked.current || items.length === 0) return;
+    tracked.current = true;
+    trackBeginCheckout(
+      items.map((i) => ({ id: i.productId, name: i.name, price: i.price, quantity: i.quantity, variant: i.size })),
+      subtotal
+    );
+  }, [ready, items, subtotal]);
   const router = useRouter();
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", city: "", notes: "" });
   const [submitting, setSubmitting] = useState(false);

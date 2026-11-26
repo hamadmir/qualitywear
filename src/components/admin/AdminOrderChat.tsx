@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, CreditCard, ExternalLink, Loader2, Paperclip, Send, Truck } from "lucide-react";
+import { BadgeCheck, CheckCheck, CreditCard, ExternalLink, Loader2, Paperclip, Send, Truck, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Order } from "@/lib/types";
 
@@ -24,7 +24,11 @@ export default function AdminOrderChat({
   order,
   paymentInstructions,
 }: {
-  order: Pick<Order, "id" | "order_number" | "status" | "payment_status" | "total" | "customer_name">;
+  order: Pick<Order, "id" | "order_number" | "status" | "payment_status" | "total" | "customer_name"> & {
+    courier?: string | null;
+    tracking_number?: string | null;
+    tracking_url?: string | null;
+  };
   paymentInstructions: string | null;
 }) {
   const router = useRouter();
@@ -33,6 +37,11 @@ export default function AdminOrderChat({
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [shipOpen, setShipOpen] = useState(false);
+  const [courier, setCourier] = useState(order.courier ?? "TCS");
+  const [otherCourier, setOtherCourier] = useState("");
+  const [trackingNo, setTrackingNo] = useState(order.tracking_number ?? "");
+  const [trackingUrl, setTrackingUrl] = useState(order.tracking_url ?? "");
   const listRef = useRef<HTMLDivElement>(null);
   const count = useRef(0);
   const linksRef = useRef<Record<string, string>>({});
@@ -86,7 +95,22 @@ export default function AdminOrderChat({
     load();
   }
 
-  async function update(patch: Partial<Pick<Order, "status" | "payment_status">>) {
+  async function ship() {
+    const name = courier === "Other" ? otherCourier.trim() : courier;
+    const url = trackingUrl.trim();
+    if (url && !/^https?:\/\//i.test(url)) return setError("The tracking link must start with https://");
+    await update({
+      ...(order.status !== "shipped" ? { status: "shipped" as const } : {}),
+      courier: name || null,
+      tracking_number: trackingNo.trim() || null,
+      tracking_url: url || null,
+    });
+    setShipOpen(false);
+  }
+
+  async function update(
+    patch: Partial<Pick<Order, "status" | "payment_status">> & { courier?: string | null; tracking_number?: string | null; tracking_url?: string | null }
+  ) {
     setBusy(true);
     setError("");
     const { error } = await createClient().from("orders").update(patch).eq("id", order.id);
@@ -171,10 +195,48 @@ export default function AdminOrderChat({
               <BadgeCheck className="h-3.5 w-3.5" /> Payment received
             </button>
           )}
-          {order.status !== "shipped" && (
-            <button onClick={() => update({ status: "shipped" })} disabled={busy} className="btn bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-700">
-              <Truck className="h-3.5 w-3.5" /> Mark as shipped
+          <button onClick={() => setShipOpen((v) => !v)} disabled={busy} className="btn bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-700">
+            <Truck className="h-3.5 w-3.5" /> {order.status === "shipped" ? "Edit tracking" : "Mark as shipped"}
+          </button>
+          {order.status === "shipped" && (
+            <button onClick={() => update({ status: "delivered" })} disabled={busy} className="btn bg-green-700 px-3 py-1.5 text-xs text-white hover:bg-green-800">
+              <CheckCheck className="h-3.5 w-3.5" /> Mark delivered
             </button>
+          )}
+          {shipOpen && (
+            <div className="mt-1 w-full rounded-xl border border-indigo-200 bg-indigo-50 p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-indigo-900">Shipping details (sent to the customer in the chat)</p>
+                <button onClick={() => setShipOpen(false)} className="text-indigo-900/60 hover:text-indigo-900" aria-label="Close">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <select value={courier} onChange={(e) => setCourier(e.target.value)} className="input py-2 text-sm">
+                  {["TCS", "Leopards", "M&P", "PostEx", "Trax", "Call Courier", "BlueEx", "Pakistan Post", "Own rider", "Other"].map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </select>
+                {courier === "Other" ? (
+                  <input value={otherCourier} onChange={(e) => setOtherCourier(e.target.value)} placeholder="Courier name" className="input py-2 text-sm" />
+                ) : (
+                  <input value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} placeholder="Tracking / CN number" className="input py-2 text-sm" />
+                )}
+                {courier === "Other" && (
+                  <input value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} placeholder="Tracking / CN number" className="input py-2 text-sm" />
+                )}
+                <input
+                  value={trackingUrl}
+                  onChange={(e) => setTrackingUrl(e.target.value)}
+                  placeholder="Tracking link (optional) https://…"
+                  className="input py-2 text-sm sm:col-span-2"
+                />
+              </div>
+              <button onClick={ship} disabled={busy} className="btn mt-2 w-full bg-indigo-600 py-2 text-xs text-white hover:bg-indigo-700">
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Truck className="h-3.5 w-3.5" />}
+                {order.status === "shipped" ? "Update tracking" : "Ship & notify customer"}
+              </button>
+            </div>
           )}
         </div>
       )}

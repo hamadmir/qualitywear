@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Banknote, Check, Minus, Plus, RefreshCcw, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { discountPercent, effectivePrice, rs, sortedImages, whatsappLink } from "@/lib/format";
 import { useCart } from "./CartProvider";
 import { WhatsAppIcon } from "./WhatsAppButton";
+import SizeChart from "./SizeChart";
+import StockAlertForm from "./StockAlertForm";
+import Stars from "./Stars";
+import { trackAddToCart, trackViewItem } from "@/lib/analytics";
 
 const SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "3XL", "4XL"];
 function sizeRank(s: string) {
@@ -16,7 +20,15 @@ function sizeRank(s: string) {
   return Number.isNaN(n) ? 100 : 10 + n;
 }
 
-export default function ProductDetail({ product, whatsappNumber }: { product: Product; whatsappNumber: string | null }) {
+export default function ProductDetail({
+  product,
+  whatsappNumber,
+  rating,
+}: {
+  product: Product;
+  whatsappNumber: string | null;
+  rating?: { avg: number; count: number };
+}) {
   const images = sortedImages(product);
   const [active, setActive] = useState(0);
   const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
@@ -44,12 +56,19 @@ export default function ProductDetail({ product, whatsappNumber }: { product: Pr
   const price = effectivePrice(product);
   const off = discountPercent(product);
   const allSoldOut = variants.every((v) => v.stock === 0);
+  const sizeChart = product.categories?.size_chart?.trim() || null;
+
+  useEffect(() => {
+    trackViewItem({ id: product.id, name: product.name, price, category: product.categories?.name });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
 
   function handleAdd() {
     if (!selected) {
       setError("Please select a size first.");
       return;
     }
+    if (selected.stock === 0) return;
     add({
       variantId: selected.id,
       productId: product.id,
@@ -62,6 +81,7 @@ export default function ProductDetail({ product, whatsappNumber }: { product: Pr
       quantity: qty,
       maxStock: selected.stock,
     });
+    trackAddToCart({ id: product.id, name: product.name, price, quantity: qty, variant: selected.size, category: product.categories?.name });
     setError("");
     setAdded(true);
     setTimeout(() => setAdded(false), 3000);
@@ -131,6 +151,13 @@ export default function ProductDetail({ product, whatsappNumber }: { product: Pr
           </Link>
         )}
         <h1 className="mt-3 font-display text-4xl font-bold leading-[1.05] sm:text-5xl">{product.name}</h1>
+        {rating && rating.count > 0 && (
+          <a href="#reviews" className="mt-3 inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-ink">
+            <Stars value={rating.avg} />
+            <span className="font-semibold text-ink">{rating.avg.toFixed(1)}</span>
+            <span>({rating.count} {rating.count === 1 ? "review" : "reviews"})</span>
+          </a>
+        )}
         <div className="mt-5 flex items-baseline gap-3">
           <span className="text-3xl font-bold tracking-tight">{rs(price)}</span>
           {product.sale_price != null && (
@@ -170,15 +197,18 @@ export default function ProductDetail({ product, whatsappNumber }: { product: Pr
 
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Select size</p>
-            {selected && selected.stock <= 3 && (
-              <p className="text-xs font-semibold text-amber-700">Only {selected.stock} left</p>
-            )}
+            <div className="flex items-center gap-3">
+              {selected && selected.stock > 0 && selected.stock <= 3 && (
+                <p className="text-xs font-semibold text-amber-700">Only {selected.stock} left</p>
+              )}
+              {sizeChart && <SizeChart chart={sizeChart} title={product.categories?.name ?? product.name} />}
+            </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {sizesForColor.map((v) => (
               <button
                 key={v.id}
-                disabled={v.stock === 0}
+                title={v.stock === 0 ? "Sold out: tap to get notified" : undefined}
                 onClick={() => {
                   setVariantId(v.id);
                   setQty(1);
@@ -186,7 +216,9 @@ export default function ProductDetail({ product, whatsappNumber }: { product: Pr
                 }}
                 className={`h-11 min-w-12 rounded-full border px-4 text-sm font-semibold transition ${
                   v.stock === 0
-                    ? "cursor-not-allowed border-black/5 bg-neutral-100 text-neutral-300 line-through"
+                    ? v.id === variantId
+                      ? "border-ink bg-neutral-100 text-neutral-500 line-through"
+                      : "border-black/5 bg-neutral-100 text-neutral-300 line-through hover:border-black/20"
                     : v.id === variantId
                       ? "border-ink bg-ink text-white"
                       : "border-black/10 hover:border-ink"
@@ -197,7 +229,13 @@ export default function ProductDetail({ product, whatsappNumber }: { product: Pr
             ))}
           </div>
 
-          {!allSoldOut ? (
+          {selected && selected.stock === 0 ? (
+            <StockAlertForm
+              key={selected.id}
+              variantId={selected.id}
+              label={`Size ${selected.size}${selected.color ? ` (${selected.color})` : ""}`}
+            />
+          ) : !allSoldOut ? (
             <div className="mt-6 flex items-center gap-3">
               <div className="flex h-12 items-center rounded-full border border-black/10">
                 <button className="px-4" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Decrease quantity">
@@ -229,7 +267,7 @@ export default function ProductDetail({ product, whatsappNumber }: { product: Pr
             </div>
           ) : (
             <p className="mt-6 rounded-full bg-neutral-100 p-3 text-center text-sm font-semibold text-neutral-600">
-              This item is currently sold out
+              Sold out. Tap a size above to get notified when it&apos;s back.
             </p>
           )}
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
