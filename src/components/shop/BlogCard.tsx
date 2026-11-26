@@ -31,7 +31,7 @@ export default function BlogCard({ post }: { post: BlogPost }) {
     <Link href={`/blog/${post.slug}`} className="group flex h-full flex-col rounded-[24px] border border-black/5 bg-white p-2.5 transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)]">
       <div className="aspect-[16/11] overflow-hidden rounded-[18px] bg-sand">
         {post.cover_url ? (
-          <img src={post.cover_url} alt={post.title} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+          <img src={post.cover_url} alt={post.cover_alt || post.title} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
         ) : (
           <div className="h-full transition duration-700 group-hover:scale-105">
             <BlogCover post={post} />

@@ -1,3 +1,4 @@
+import { SITE_URL } from "@/lib/site";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
@@ -6,6 +7,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  openGraph: { type: "website", siteName: "Quality Wear", locale: "en_PK" },
   applicationName: "Quality Wear",
   appleWebApp: { capable: true, title: "Quality Wear", statusBarStyle: "black-translucent" },
   icons: {

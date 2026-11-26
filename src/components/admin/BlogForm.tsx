@@ -24,6 +24,10 @@ export default function BlogForm({ post }: { post?: BlogPost }) {
   const [slugTouched, setSlugTouched] = useState(isEdit);
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
   const [content, setContent] = useState(post?.content ?? "");
+  const [tags, setTags] = useState((post?.tags ?? []).join(", "));
+  const [metaTitle, setMetaTitle] = useState(post?.meta_title ?? "");
+  const [metaDesc, setMetaDesc] = useState(post?.meta_description ?? "");
+  const [coverAlt, setCoverAlt] = useState(post?.cover_alt ?? "");
   const [published, setPublished] = useState(post?.is_published ?? true);
   const [coverUrl, setCoverUrl] = useState<string | null>(post?.cover_url ?? null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -50,6 +54,10 @@ export default function BlogForm({ post }: { post?: BlogPost }) {
         excerpt: excerpt.trim() || null,
         content: content.trim(),
         cover_url: cover,
+        cover_alt: coverAlt.trim() || null,
+        tags: [...new Set(tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 15),
+        meta_title: metaTitle.trim() || null,
+        meta_description: metaDesc.trim() || null,
         is_published: published,
         published_at: published ? post?.published_at ?? new Date().toISOString() : null,
       };
@@ -149,12 +157,40 @@ export default function BlogForm({ post }: { post?: BlogPost }) {
               onChange={(e) => setContent(e.target.value)}
             />
             <p className="mt-1 text-xs text-neutral-500">
-              Tips: leave an empty line for a new paragraph · start a line with &quot;## &quot; for a heading · start with &quot;- &quot; for a bullet list
+              Tips: empty line = new paragraph · &quot;## &quot; heading · &quot;### &quot; sub-heading · &quot;- &quot; bullets · &quot;1. &quot; numbered ·
+              **bold** · [link text](/shop?category=jeans) · a &quot;## Frequently asked questions&quot; section with &quot;### &quot; questions shows as FAQ in Google
             </p>
           </div>
         </section>
-
         <div className="space-y-6">
+  <section className="card space-y-4 p-5">
+          <h2 className="font-semibold">SEO (Google)</h2>
+          <div>
+            <label className="label" htmlFor="b-tags">Tags / keywords</label>
+            <input
+              id="b-tags"
+              className="input"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="mens shirts, shirt size guide, sialkot"
+            />
+            <p className="mt-1 text-xs text-neutral-500">Comma separated. Shown under the article and used to link related posts.</p>
+          </div>
+          <div>
+            <label className="label" htmlFor="b-mt">Google title <span className="font-normal text-neutral-400">({metaTitle.length}/60)</span></label>
+            <input id="b-mt" className="input" maxLength={120} value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder={title || "Leave empty to use the article title"} />
+          </div>
+          <div>
+            <label className="label" htmlFor="b-md">Google description <span className="font-normal text-neutral-400">({metaDesc.length}/160)</span></label>
+            <textarea id="b-md" rows={3} className="input" maxLength={320} value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} placeholder="The 1–2 lines Google shows under the title" />
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-white p-4">
+            <p className="text-xs text-neutral-400">Google preview</p>
+            <p className="mt-1 truncate text-[17px] text-[#1a0dab]">{(metaTitle || title || "Article title") + " | Quality Wear"}</p>
+            <p className="truncate text-xs text-[#006621]">/blog/{slugify(slug || title) || "article-url"}</p>
+            <p className="mt-0.5 line-clamp-2 text-[13px] text-neutral-600">{metaDesc || excerpt || "Description…"}</p>
+          </div>
+        </section>
           <section className="card p-5">
             <p className="label">Cover image</p>
             <label className="flex aspect-[16/10] cursor-pointer items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-neutral-300 text-sm text-neutral-500 hover:border-ink">
@@ -184,6 +220,8 @@ export default function BlogForm({ post }: { post?: BlogPost }) {
                 Remove picture
               </button>
             )}
+            <label className="label mt-3" htmlFor="b-alt">Picture description (alt text)</label>
+            <input id="b-alt" className="input" value={coverAlt} onChange={(e) => setCoverAlt(e.target.value)} placeholder="e.g. Man wearing a white oxford shirt with navy chinos" />
           </section>
 
           <section className="card p-5 text-sm">

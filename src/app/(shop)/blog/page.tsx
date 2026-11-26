@@ -1,23 +1,53 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Hash } from "lucide-react";
+import { tagSlug } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
 import type { BlogPost } from "@/lib/types";
 import BlogCard, { BlogCover, blogDate, readingTime } from "@/components/shop/BlogCard";
 import PageHero from "@/components/ui/PageHero";
 import Reveal from "@/components/ui/Reveal";
 
-export const metadata: Metadata = { title: "Journal" };
+type SearchParams = Promise<{ tag?: string }>;
 
-export default async function BlogPage() {
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const { tag } = await searchParams;
+  if (tag) {
+    const label = tag.replace(/-/g, " ");
+    return {
+      title: `${label.replace(/\b\w/g, (c) => c.toUpperCase())} – Style Guides`,
+      description: `Articles about ${label} from the Quality Wear Journal: fit guides, styling ideas and buying tips for men in Pakistan.`,
+      alternates: { canonical: `/blog?tag=${tag}` },
+    };
+  }
+  return {
+    title: "Men's Style Journal – Fit Guides & Fashion Tips for Pakistan",
+    description:
+      "Men's fashion tips for Pakistan: shirt and jeans size guides, what to wear for weddings, office and winter, fabric care and styling ideas from Quality Wear, Sialkot.",
+    alternates: { canonical: "/blog" },
+  };
+}
+
+export default async function BlogPage({ searchParams }: { searchParams: SearchParams }) {
+  const { tag } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase
     .from("blog_posts")
     .select("*")
     .eq("is_published", true)
     .order("published_at", { ascending: false })
-    .limit(60);
-  const posts = (data as BlogPost[]) ?? [];
+    .limit(200);
+  const all = (data as BlogPost[]) ?? [];
+  const counts = new Map<string, { label: string; n: number }>();
+  all.forEach((p) =>
+    (p.tags ?? []).forEach((t) => {
+      const k = tagSlug(t);
+      counts.set(k, { label: counts.get(k)?.label ?? t, n: (counts.get(k)?.n ?? 0) + 1 });
+    })
+  );
+  const topTags = [...counts.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 18);
+  const posts = tag ? all.filter((p) => (p.tags ?? []).some((t) => tagSlug(t) === tag)) : all;
+  const activeLabel = tag ? counts.get(tag)?.label ?? tag.replace(/-/g, " ") : null;
   const [lead, ...rest] = posts;
 
   return (
@@ -30,6 +60,33 @@ export default async function BlogPage() {
       />
 
       <div className="mx-auto max-w-7xl">
+        {topTags.length > 0 && (
+          <nav aria-label="Topics" className="mt-6 flex flex-wrap gap-2">
+            <Link
+              href="/blog"
+              className={`rounded-full px-4 py-2 text-sm font-semibold ${!tag ? "bg-ink text-white" : "border border-black/10 bg-white hover:border-ink"}`}
+            >
+              All articles
+            </Link>
+            {topTags.map(([k, v]) => (
+              <Link
+                key={k}
+                href={`/blog?tag=${k}`}
+                className={`inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium ${
+                  tag === k ? "bg-ink text-white" : "border border-black/10 bg-white text-neutral-700 hover:border-ink"
+                }`}
+              >
+                <Hash className="h-3.5 w-3.5 opacity-50" />
+                {v.label}
+              </Link>
+            ))}
+          </nav>
+        )}
+        {activeLabel && (
+          <h2 className="mt-8 font-display text-3xl font-bold">
+            Articles about <span className="font-accent text-brass">{activeLabel}</span>
+          </h2>
+        )}
         {!lead ? (
           <Reveal className="mt-6 rounded-[28px] border border-dashed border-black/15 bg-white/60 p-14 text-center">
             <p className="text-lg font-semibold">Our first article is coming soon.</p>
@@ -44,7 +101,7 @@ export default async function BlogPage() {
               >
                 <div className="aspect-[16/11] overflow-hidden rounded-[22px] lg:aspect-auto lg:min-h-[380px]">
                   {lead.cover_url ? (
-                    <img src={lead.cover_url} alt={lead.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                    <img src={lead.cover_url} alt={lead.cover_alt || lead.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                   ) : (
                     <div className="h-full transition duration-700 group-hover:scale-105">
                       <BlogCover post={lead} large />

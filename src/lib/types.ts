@@ -66,6 +66,10 @@ export type BlogPost = {
   excerpt: string | null;
   content: string;
   cover_url: string | null;
+  cover_alt: string | null;
+  tags: string[];
+  meta_title: string | null;
+  meta_description: string | null;
   is_published: boolean;
   published_at: string | null;
   created_at: string;

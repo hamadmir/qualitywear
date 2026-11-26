@@ -1,3 +1,4 @@
+import { SITE_URL } from "@/lib/site";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -44,6 +45,13 @@ function parseFaq(text: string) {
     })
     .filter((f) => f.q && f.a);
 }
+
+export const metadata = {
+  title: { absolute: "Quality Wear | Men's Clothing Store in Sialkot, Pakistan" },
+  description:
+    "Shop men's shirts, jeans, polos, t-shirts, jackets, hoodies and sweaters at Quality Wear, Sialkot. Premium fabrics, honest prices and delivery across Pakistan.",
+  alternates: { canonical: "/" },
+};
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -109,8 +117,29 @@ export default async function HomePage() {
       : { label: "Shipping", value: "All of Pakistan" },
   ];
 
+  const storeJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ClothingStore",
+    name: settings.shop_name || "Quality Wear",
+    url: SITE_URL,
+    logo: `${SITE_URL}/icon-512.png`,
+    image: settings.hero_image_url || `${SITE_URL}/icon-512.png`,
+    description: "Menswear store in Sialkot selling shirts, jeans, polos, t-shirts, jackets, hoodies, sweaters and trousers, with delivery across Pakistan.",
+    telephone: settings.phone || undefined,
+    email: settings.email || undefined,
+    priceRange: "Rs",
+    address: settings.address
+      ? { "@type": "PostalAddress", streetAddress: settings.address, addressLocality: "Sialkot", addressRegion: "Punjab", addressCountry: "PK" }
+      : undefined,
+    hasMap: settings.map_link || undefined,
+    openingHours: settings.opening_hours ? "Mo-Su 11:00-23:00" : undefined,
+    sameAs: [settings.instagram_url, settings.facebook_url, settings.tiktok_url].filter(Boolean),
+    areaServed: { "@type": "Country", name: "Pakistan" },
+  };
+
   return (
     <div className="px-3 sm:px-5">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(storeJsonLd).replace(/</g, "\\u003c") }} />
       {/* ---------- HERO ---------- */}
       <section className="relative mx-auto -mt-[76px] max-w-7xl overflow-hidden rounded-[28px] bg-ink text-white">
         {heroImage && <img src={heroImage} alt="" className="animate-slow-zoom absolute inset-0 h-full w-full object-cover opacity-50" />}
