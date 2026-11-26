@@ -97,7 +97,7 @@ export default function ProductDetail({
   return (
     <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-12">
       {/* Gallery */}
-      <div className="flex flex-col-reverse gap-3 sm:flex-row">
+      <div className="flex min-w-0 flex-col-reverse gap-3 sm:flex-row sm:items-start">
         {images.length > 1 && (
           <div className="flex gap-2 overflow-x-auto sm:w-20 sm:flex-col">
             {images.map((img, i) => (
@@ -113,8 +113,9 @@ export default function ProductDetail({
             ))}
           </div>
         )}
+        <div className="min-w-0 flex-1 self-start">
         <div
-          className="relative aspect-[4/5] flex-1 cursor-zoom-in overflow-hidden rounded-[24px] bg-sand"
+          className="relative aspect-[4/5] w-full cursor-zoom-in overflow-hidden rounded-[24px] bg-sand"
           onMouseMove={(e) => {
             const r = e.currentTarget.getBoundingClientRect();
             setZoom({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
@@ -136,6 +137,7 @@ export default function ProductDetail({
             {off > 0 && <span className="rounded-full bg-amber px-3 py-1 text-xs font-bold text-ink">-{off}%</span>}
             {allSoldOut && <span className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white">Sold out</span>}
           </div>
+        </div>
         </div>
       </div>
 

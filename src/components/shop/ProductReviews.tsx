@@ -6,7 +6,7 @@ import Stars from "./Stars";
 export default function ProductReviews({ reviews }: { reviews: Review[] }) {
   const { count, avg, dist } = summarize(reviews.map((r) => r.rating));
   return (
-    <section id="reviews" className="scroll-mt-28 pt-20">
+    <section id="reviews" className="relative z-10 clear-both scroll-mt-28 pt-20">
       <h2 className="font-display text-4xl font-bold">
         Customer <span className="font-accent text-neutral-400">reviews.</span>
       </h2>
